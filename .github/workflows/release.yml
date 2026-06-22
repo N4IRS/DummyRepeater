@@ -1,0 +1,64 @@
+name: Automated Production Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build_packages:
+    name: Build & Package Release Assets
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        arch: [amd64, arm64]
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Environment Variables
+        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_ENV
+
+      - name: Prepare Workspace for Package Building
+        run: |
+          mkdir -p build_root/usr/local/bin
+          mkdir -p build_root/etc/dvswitch
+          mkdir -p build_root/lib/systemd/system
+          
+          # Stage user configurations & scripts
+          cp config/Analog_Bridge.ini build_root/etc/dvswitch/Analog_Bridge.ini.example
+          cp config/dvsm.macro build_root/etc/dvswitch/dvsm.macro.example
+          cp scripts/dvswitch.sh build_root/usr/local/bin/dvswitch.sh
+          chmod +x build_root/usr/local/bin/dvswitch.sh
+
+      - name: Fetch Architecture Binary
+        run: |
+          # Placeholder for Analog_Bridge binary version ${{ env.VERSION }} (${{ matrix.arch }})
+          echo "Placeholder for Analog_Bridge binary version ${{ env.VERSION }} (${{ matrix.arch }})" > build_root/usr/local/bin/Analog_Bridge
+          chmod +x build_root/usr/local/bin/Analog_Bridge
+
+      - name: Build Standalone Tarball Artifact
+        run: |
+          mkdir -p artifacts
+          cp build_root/usr/local/bin/Analog_Bridge artifacts/Analog_Bridge.${{ matrix.arch }}
+          cd build_root && tar -czf ../artifacts/analog-bridge-${{ env.VERSION }}-${{ matrix.arch }}.tar.gz .
+
+      - name: Build Debian Package
+        run: |
+          cp -r debian build_root/DEBIAN
+          # Dynamic correction of Architecture field in the control file based on matrix execution
+          sed -i 's/^Architecture:.*/Architecture: ${{ matrix.arch }}/' build_root/DEBIAN/control
+          sed -i 's/^Version:.*/Version: ${{ env.VERSION }}/' build_root/DEBIAN/control || echo "Version: ${{ env.VERSION }}" >> build_root/DEBIAN/control
+          
+          dpkg-deb --build build_root artifacts/analog-bridge_${{ env.VERSION }}_${{ matrix.arch }}.deb
+
+      - name: Upload and Attach Assets to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            artifacts/Analog_Bridge.${{ matrix.arch }}
+            artifacts/analog-bridge-${{ env.VERSION }}-${{ matrix.arch }}.tar.gz
+            artifacts/analog-bridge_${{ env.VERSION }}_${{ matrix.arch }}.deb
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

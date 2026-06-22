@@ -1,0 +1,12 @@
+Source: analog-bridge
+Section: hamradio
+Priority: optional
+Maintainer: DVSwitch Team <infrastructure@dvswitch.org>
+Build-Depends: debhelper-compat (= 13)
+Standards-Version: 4.6.2
+
+Package: analog-bridge
+Architecture: amd64 arm64 armhf
+Depends: ${shlibs:Depends}, ${misc:Depends}, libc6
+Description: Audio translation bridge for DVSwitch digital voice networks.
+ Converts raw PCM audio streams to/from AMBE/IMBE compressed digital voice frames.

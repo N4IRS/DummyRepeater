@@ -34,8 +34,8 @@ jobs:
 
       - name: Fetch Architecture Binary
         run: |
-          # Placeholder for Analog_Bridge binary version ${{ env.VERSION }} (${{ matrix.arch }})
-          echo "Placeholder for Analog_Bridge binary version ${{ env.VERSION }} (${{ matrix.arch }})" > build_root/usr/local/bin/Analog_Bridge
+          # Download the pre-compiled binary for this architecture from release assets
+          curl -L -o build_root/usr/local/bin/Analog_Bridge https://github.com/DVSwitch/Analog_Bridge/releases/download/${{ github.ref_name }}/Analog_Bridge.${{ matrix.arch }}
           chmod +x build_root/usr/local/bin/Analog_Bridge
 
       - name: Build Standalone Tarball Artifact
